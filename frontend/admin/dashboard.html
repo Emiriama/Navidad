@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Admin - Panadería Navideña</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">🎄 Admin - Panadería Navideña</div>
+            <div class="nav-menu">
+                <a href="dashboard.html" class="active">Dashboard</a>
+                <a href="productos.html">Productos</a>
+                <a href="usuarios.html">Usuarios</a>
+                <a href="historial.html">Historial Ventas</a>
+                <a href="../index.html">Ver Sitio</a>
+                <a href="#" id="navLogout">Cerrar Sesión</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>Panel de Control</h1>
+
+        <!-- Estadísticas Rápidas -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">💰</div>
+                <div class="stat-info">
+                    <h3 id="totalIngresos">$0.00</h3>
+                    <p>Total Ingresos</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📦</div>
+                <div class="stat-info">
+                    <h3 id="totalVentas">0</h3>
+                    <p>Total Ventas</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🎯</div>
+                <div class="stat-info">
+                    <h3 id="ventasHoy">0</h3>
+                    <p>Ventas Hoy</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráficos -->
+        <div class="charts-grid">
+            <div class="card">
+                <h2>Ventas por Mes</h2>
+                <canvas id="ventasMesChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        protegerPaginaAdmin();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            cargarEstadisticas();
+        });
+
+        async function cargarEstadisticas() {
+            try {
+                const response = await fetchAuth(`${API_URL}/ventas/estadisticas`);
+                const data = await response.json();
+
+                document.getElementById('totalIngresos').textContent = formatearMoneda(data.total_ingresos);
+                document.getElementById('totalVentas').textContent = data.total_ventas;
+                document.getElementById('ventasHoy').textContent = data.ventas_hoy;
+
+                // Gráfico de ventas por mes
+                const ctx = document.getElementById('ventasMesChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.ventas_por_mes.map(v => v.mes),
+                        datasets: [{
+                            label: 'Ingresos',
+                            data: data.ventas_por_mes.map(v => v.ingresos),
+                            backgroundColor: 'rgba(196, 30, 58, 0.6)',
+                            borderColor: 'rgba(196, 30, 58, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+    </script>
+
+    <style>
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .stat-icon {
+            font-size: 3rem;
+        }
+
+        .stat-info h3 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: var(--secondary-color);
+        }
+
+        .stat-info p {
+            color: #666;
+        }
+
+        .charts-grid {
+            margin-top: 2rem;
+        }
+    </style>
+</body>
+</html>

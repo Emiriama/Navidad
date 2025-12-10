@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión - Panadería Navideña</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">🎄 Panadería Navideña</div>
+            <div class="nav-menu">
+                <a href="index.html">Inicio</a>
+                <a href="productos.html">Productos</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="auth-container">
+        <div class="auth-box">
+            <h2>Iniciar Sesión</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="nombre_usuario">Nombre de Usuario</label>
+                    <input type="text" id="nombre_usuario" name="nombre_usuario" required>
+                </div>
+                <div class="form-group">
+                    <label for="contrasena">Contraseña</label>
+                    <input type="password" id="contrasena" name="contrasena" required>
+                </div>
+                <div id="errorMsg" class="error-msg"></div>
+                <button type="submit" class="btn btn-primary">Iniciar Sesión</button>
+            </form>
+            <p class="auth-link">¿No tienes cuenta? <a href="registro.html">Regístrate aquí</a></p>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script>
+        const form = document.getElementById('loginForm');
+        const errorMsg = document.getElementById('errorMsg');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            errorMsg.textContent = '';
+
+            const formData = new FormData(form);
+            const data = {
+                nombre_usuario: formData.get('nombre_usuario').trim(),
+                contrasena: formData.get('contrasena')
+            };
+
+            // Validaciones frontend
+            if (data.nombre_usuario.length < 3) {
+                errorMsg.textContent = 'El nombre de usuario debe tener al menos 3 caracteres';
+                return;
+            }
+
+            if (data.contrasena.length < 6) {
+                errorMsg.textContent = 'La contraseña debe tener al menos 6 caracteres';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem('token', result.token);
+                    localStorage.setItem('usuario', JSON.stringify(result.usuario));
+                    
+                    if (result.usuario.rol === 'administrador') {
+                        window.location.href = 'admin/dashboard.html';
+                    } else {
+                        window.location.href = 'productos.html';
+                    }
+                } else {
+                    errorMsg.textContent = result.error || 'Error al iniciar sesión';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                errorMsg.textContent = 'Error de conexión con el servidor';
+            }
+        });
+    </script>
+</body>
+</html>

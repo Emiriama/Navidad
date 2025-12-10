@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro - Panadería Navideña</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">🎄 Panadería Navideña</div>
+            <div class="nav-menu">
+                <a href="index.html">Inicio</a>
+                <a href="productos.html">Productos</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="auth-container">
+        <div class="auth-box">
+            <h2>Crear Cuenta</h2>
+            <form id="registroForm">
+                <div class="form-group">
+                    <label for="nombre_usuario">Nombre de Usuario</label>
+                    <input type="text" id="nombre_usuario" name="nombre_usuario" required>
+                    <small>Solo letras, números y guiones bajos (3-50 caracteres)</small>
+                </div>
+                <div class="form-group">
+                    <label for="correo">Correo Electrónico</label>
+                    <input type="email" id="correo" name="correo" required>
+                </div>
+                <div class="form-group">
+                    <label for="contrasena">Contraseña</label>
+                    <input type="password" id="contrasena" name="contrasena" required>
+                    <small>Mínimo 6 caracteres</small>
+                </div>
+                <div class="form-group">
+                    <label for="confirmar_contrasena">Confirmar Contraseña</label>
+                    <input type="password" id="confirmar_contrasena" name="confirmar_contrasena" required>
+                </div>
+                <div id="errorMsg" class="error-msg"></div>
+                <div id="successMsg" class="success-msg"></div>
+                <button type="submit" class="btn btn-primary">Registrarse</button>
+            </form>
+            <p class="auth-link">¿Ya tienes cuenta? <a href="login.html">Inicia sesión aquí</a></p>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script>
+        const form = document.getElementById('registroForm');
+        const errorMsg = document.getElementById('errorMsg');
+        const successMsg = document.getElementById('successMsg');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            errorMsg.textContent = '';
+            successMsg.textContent = '';
+
+            const formData = new FormData(form);
+            const data = {
+                nombre_usuario: formData.get('nombre_usuario').trim(),
+                correo: formData.get('correo').trim(),
+                contrasena: formData.get('contrasena')
+            };
+
+            const confirmarContrasena = formData.get('confirmar_contrasena');
+
+            // Validaciones frontend
+            if (data.nombre_usuario.length < 3 || data.nombre_usuario.length > 50) {
+                errorMsg.textContent = 'El nombre de usuario debe tener entre 3 y 50 caracteres';
+                return;
+            }
+
+            if (!/^[a-zA-Z0-9_]+$/.test(data.nombre_usuario)) {
+                errorMsg.textContent = 'El nombre de usuario solo puede contener letras, números y guiones bajos';
+                return;
+            }
+
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.correo)) {
+                errorMsg.textContent = 'Correo electrónico inválido';
+                return;
+            }
+
+            if (data.contrasena.length < 6) {
+                errorMsg.textContent = 'La contraseña debe tener al menos 6 caracteres';
+                return;
+            }
+
+            if (data.contrasena !== confirmarContrasena) {
+                errorMsg.textContent = 'Las contraseñas no coinciden';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/auth/registro`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    successMsg.textContent = 'Registro exitoso. Redirigiendo al inicio de sesión...';
+                    form.reset();
+                    setTimeout(() => {
+                        window.location.href = 'login.html';
+                    }, 2000);
+                } else {
+                    errorMsg.textContent = result.error || 'Error al registrar usuario';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                errorMsg.textContent = 'Error de conexión con el servidor';
+            }
+        });
+    </script>
+</body>
+</html>

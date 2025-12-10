@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎄 Panadería Navideña</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">🎄 Panadería Navideña</div>
+            <div class="nav-menu" id="navMenu">
+                <a href="index.html">Inicio</a>
+                <a href="productos.html">Productos</a>
+                <a href="#" id="navCarrito" style="display: none;">
+                    🛒 Carrito <span id="carritoCount">0</span>
+                </a>
+                <a href="#" id="navPerfil" style="display: none;">Mi Perfil</a>
+                <a href="#" id="navAdmin" style="display: none;">Admin</a>
+                <a href="login.html" id="navLogin">Iniciar Sesión</a>
+                <a href="#" id="navLogout" style="display: none;">Cerrar Sesión</a>
+            </div>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="hero-content">
+            <h1>🎅 Bienvenido a Panadería Navideña</h1>
+            <p>Los mejores panes y postres de temporada</p>
+            <a href="productos.html" class="btn btn-primary">Ver Productos</a>
+        </div>
+    </header>
+
+    <section class="features">
+        <div class="container">
+            <h2>¿Por qué elegirnos?</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🍞</div>
+                    <h3>Productos Frescos</h3>
+                    <p>Pan recién horneado todos los días</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎄</div>
+                    <h3>Especiales Navideños</h3>
+                    <p>Productos exclusivos de temporada</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Entrega Rápida</h3>
+                    <p>Sistema de pedidos eficiente</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Panadería Navideña. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+</body>
+</html>

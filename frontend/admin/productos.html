@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Productos - Admin</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">🎄 Admin - Panadería Navideña</div>
+            <div class="nav-menu">
+                <a href="dashboard.html">Dashboard</a>
+                <a href="productos.html" class="active">Productos</a>
+                <a href="usuarios.html">Usuarios</a>
+                <a href="historial.html">Historial Ventas</a>
+                <a href="../index.html">Ver Sitio</a>
+                <a href="#" id="navLogout">Cerrar Sesión</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <h1>Gestión de Productos</h1>
+            <button class="btn btn-primary" onclick="mostrarFormulario()">+ Nuevo Producto</button>
+        </div>
+
+        <div id="errorMsg" class="error-msg"></div>
+        <div id="successMsg" class="success-msg"></div>
+
+        <!-- Formulario de Producto -->
+        <div id="formProducto" class="card" style="display: none;">
+            <h2 id="formTitulo">Nuevo Producto</h2>
+            <form id="productoForm">
+                <input type="hidden" id="productoId">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="nombre">Nombre *</label>
+                        <input type="text" id="nombre" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="precio">Precio *</label>
+                        <input type="number" id="precio" min="0.01" max="999999" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="stock">Stock *</label>
+                        <input type="number" id="stock" min="0" max="999999" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="imagen_url">URL de Imagen</label>
+                        <input type="url" id="imagen_url">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="descripcion">Descripción</label>
+                    <textarea id="descripcion" rows="3" maxlength="500"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                    <button type="button" class="btn btn-secondary" onclick="cancelarFormulario()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Lista de Productos -->
+        <div class="card">
+            <table class="tabla-admin">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Precio</th>
+                        <th>Stock</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="productosBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="../js/config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/admin.js"></script>
+    <script>
+        protegerPaginaAdmin();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            cargarProductos();
+            document.getElementById('productoForm').addEventListener('submit', guardarProducto);
+        });
+
+        function mostrarFormulario() {
+            document.getElementById('formProducto').style.display = 'block';
+            document.getElementById('formTitulo').textContent = 'Nuevo Producto';
+            document.getElementById('productoForm').reset();
+            document.getElementById('productoId').value = '';
+        }
+
+        function cancelarFormulario() {
+            document.getElementById('formProducto').style.display = 'none';
+            document.getElementById('productoForm').reset();
+        }
+
+        async function cargarProductos() {
+            try {
+                const response = await fetch(`${API_URL}/productos`);
+                const productos = await response.json();
+                const tbody = document.getElementById('productosBody');
+
+                tbody.innerHTML = productos.map(p => `
+                    <tr>
+                        <td>${p.id_producto}</td>
+                        <td>${p.nombre}</td>
+                        <td>${formatearMoneda(p.precio)}</td>
+                        <td>${p.stock}</td>
+                        <td>
+                            <button class="btn btn-sm btn-secondary" onclick="editarProducto(${p.id_producto})">Editar</button>
+                            <button class="btn btn-sm btn-danger" onclick="eliminarProducto(${p.id_producto})">Eliminar</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function guardarProducto(e) {
+            e.preventDefault();
+
+            const id = document.getElementById('productoId').value;
+            const data = {
+                nombre: document.getElementById('nombre').value.trim(),
+                descripcion: document.getElementById('descripcion').value.trim(),
+                precio: parseFloat(document.getElementById('precio').value),
+                stock: parseInt(document.getElementById('stock').value),
+                imagen_url: document.getElementById('imagen_url').value.trim()
+            };
+
+            // Validaciones frontend
+            if (data.nombre.length < 3 || data.nombre.length > 100) {
+                mostrarError('El nombre debe tener entre 3 y 100 caracteres');
+                return;
+            }
+
+            if (data.precio <= 0 || data.precio > 999999) {
+                mostrarError('El precio debe estar entre 0.01 y 999,999');
+                return;
+            }
+
+            if (data.stock < 0 || data.stock > 999999) {
+                mostrarError('El stock debe estar entre 0 y 999,999');
+                return;
+            }
+
+            try {
+                const url = id ? `${API_URL}/productos/${id}` : `${API_URL}/productos`;
+                const method = id ? 'PUT' : 'POST';
+
+                const response = await fetchAuth(url, {
+                    method,
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    mostrarExito(id ? 'Producto actualizado' : 'Producto creado');
+                    cancelarFormulario();
+                    cargarProductos();
+                } else {
+                    mostrarError(result.error);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                mostrarError('Error al guardar el producto');
+            }
+        }
+
+        async function editarProducto(id) {
+            try {
+                const response = await fetch(`${API_URL}/productos/${id}`);
+                const producto = await response.json();
+
+                document.getElementById('productoId').value = producto.id_producto;
+                document.getElementById('nombre').value = producto.nombre;
+                document.getElementById('descripcion').value = producto.descripcion || '';
+                document.getElementById('precio').value = producto.precio;
+                document.getElementById('stock').value = producto.stock;
+                document.getElementById('imagen_url').value = producto.imagen_url || '';
+
+                document.getElementById('formTitulo').textContent = 'Editar Producto';
+                document.getElementById('formProducto').style.display = 'block';
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function eliminarProducto(id) {
+            if (!confirm('¿Eliminar este producto?')) return;
+
+            try {
+                const response = await fetchAuth(`${API_URL}/productos/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    mostrarExito('Producto eliminado');
+                    cargarProductos();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+    </script>
+
+    <style>
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-family: inherit;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .tabla-admin {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .tabla-admin th,
+        .tabla-admin td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .tabla-admin th {
+            background: #f5f5f5;
+            font-weight: 600;
+        }
+
+        .tabla-admin button {
+            margin-right: 0.5rem;
+        }
+    </style>
+</body>
+</html>

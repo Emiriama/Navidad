@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carrito - Panadería Navideña</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">🎄 Panadería Navideña</div>
+            <div class="nav-menu" id="navMenu">
+                <a href="index.html">Inicio</a>
+                <a href="productos.html">Productos</a>
+                <a href="carrito.html" class="active">🛒 Carrito</a>
+                <a href="perfil.html">Mi Perfil</a>
+                <a href="admin/dashboard.html" id="navAdmin" style="display: none;">Admin</a>
+                <a href="#" id="navLogout">Cerrar Sesión</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>Mi Carrito de Compras</h1>
+
+        <div id="errorMsg" class="error-msg"></div>
+        <div id="successMsg" class="success-msg"></div>
+
+        <div class="carrito-container">
+            <div id="carritoItems" class="carrito-items"></div>
+            
+            <div class="carrito-resumen">
+                <h3>Resumen de Compra</h3>
+                <div class="resumen-item">
+                    <span>Total:</span>
+                    <span id="totalCarrito">$0.00</span>
+                </div>
+                <div class="resumen-item">
+                    <span>Tus Fondos:</span>
+                    <span id="fondosUsuario">$0.00</span>
+                </div>
+                <button id="btnComprar" class="btn btn-primary">Realizar Compra</button>
+                <button id="btnVaciar" class="btn btn-danger">Vaciar Carrito</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de ticket -->
+    <div id="ticketModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="ticketContent"></div>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/carrito.js"></script>
+</body>
+</html>
