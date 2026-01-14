@@ -12,11 +12,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Importar rutas (esto cargará database.js DESPUÉS de que dotenv esté configurado)
-const productRoutes = require('./routes/productos');
-const authRoutes = require('./routes/auth');
-const cartRoutes = require('./routes/carrito');
-const userRoutes = require('./routes/usuarios');
-const ventasRoutes = require('./routes/ventas');
+const productRoutes = require('./backend/routes/productos');
+const authRoutes = require('./backend/routes/auth');
+const cartRoutes = require('./backend/routes/carrito');
+const userRoutes = require('./backend/routes/usuarios');
+const ventasRoutes = require('./backend/routes/ventas');
 
 // Usar rutas
 app.use('/api/productos', productRoutes);
