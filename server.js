@@ -19,14 +19,14 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Servir archivos estáticos del frontend
-app.use(express.static(path.join(__dirname, '../frontend')));
+app.use(express.static(path.join(__dirname, 'frontend')));
 
 // Importar rutas
-const productRoutes = require('./routes/productos');
-const authRoutes = require('./routes/auth');
-const cartRoutes = require('./routes/carrito');
-const userRoutes = require('./routes/usuarios');
-const ventasRoutes = require('./routes/ventas');
+const productRoutes = require('./backend/routes/productos');
+const authRoutes = require('./backend/routes/auth');
+const cartRoutes = require('./backend/routes/carrito');
+const userRoutes = require('./backend/routes/usuarios');
+const ventasRoutes = require('./backend/routes/ventas');
 
 // Rutas API
 app.use('/api/productos', productRoutes);
@@ -61,7 +61,7 @@ app.use((err, req, res, next) => {
 
 // Catch-all para servir el frontend (DEBE IR AL FINAL)
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend', 'index.html'));
+    res.sendFile(path.join(__dirname, 'frontend', 'index.html'));
 });
 
 const PORT = process.env.PORT || 3000;
