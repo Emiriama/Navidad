@@ -9,13 +9,12 @@
 <body>
     <nav class="navbar">
         <div class="nav-container">
-            <div class="nav-brand">🎄 Admin - Panadería Navideña</div>
+            <div class="nav-brand">Admin - Panadería Navideña</div>
             <div class="nav-menu">
                 <a href="dashboard.html">Dashboard</a>
                 <a href="productos.html" class="active">Productos</a>
                 <a href="usuarios.html">Usuarios</a>
                 <a href="historial.html">Historial Ventas</a>
-                <a href="../index.html">Ver Sitio</a>
                 <a href="#" id="navLogout">Cerrar Sesión</a>
             </div>
         </div>
@@ -27,8 +26,8 @@
             <button class="btn btn-primary" onclick="mostrarFormulario()">+ Nuevo Producto</button>
         </div>
 
-        <div id="errorMsg" class="error-msg"></div>
-        <div id="successMsg" class="success-msg"></div>
+        <div id="errorMsg" class="error-msg" style="display:none;"></div>
+        <div id="successMsg" class="success-msg" style="display:none;"></div>
 
         <!-- Formulario de Producto -->
         <div id="formProducto" class="card" style="display: none;">
@@ -50,7 +49,7 @@
                     </div>
                     <div class="form-group">
                         <label for="imagen_url">URL de Imagen</label>
-                        <input type="url" id="imagen_url">
+                        <input type="url" id="imagen_url" placeholder="https://ejemplo.com/imagen.jpg">
                     </div>
                 </div>
                 <div class="form-group">
@@ -70,24 +69,30 @@
                 <thead>
                     <tr>
                         <th>ID</th>
+                        <th>Imagen</th>
                         <th>Nombre</th>
+                        <th>Descripción</th>
                         <th>Precio</th>
                         <th>Stock</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
-                <tbody id="productosBody"></tbody>
+                <tbody id="productosBody">
+                    <tr>
+                        <td colspan="7" style="text-align:center;">Cargando productos...</td>
+                    </tr>
+                </tbody>
             </table>
         </div>
     </div>
 
     <script src="../js/config.js"></script>
+    <script src="../js/admin.js"></script>  
     <script src="../js/auth.js"></script>
-    <script src="../js/admin.js"></script>
     <script>
         protegerPaginaAdmin();
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', function() {
             cargarProductos();
             document.getElementById('productoForm').addEventListener('submit', guardarProducto);
         });
@@ -97,6 +102,7 @@
             document.getElementById('formTitulo').textContent = 'Nuevo Producto';
             document.getElementById('productoForm').reset();
             document.getElementById('productoId').value = '';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function cancelarFormulario() {
@@ -105,31 +111,58 @@
         }
 
         async function cargarProductos() {
+            const tbody = document.getElementById('productosBody');
+            
             try {
-                const response = await fetch(`${API_URL}/productos`);
+                const url = API_URL + '/productos';
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error('Error al cargar productos');
+                }
+                
                 const productos = await response.json();
-                const tbody = document.getElementById('productosBody');
-
-                tbody.innerHTML = productos.map(p => `
-                    <tr>
-                        <td>${p.id_producto}</td>
-                        <td>${p.nombre}</td>
-                        <td>${formatearMoneda(p.precio)}</td>
-                        <td>${p.stock}</td>
-                        <td>
-                            <button class="btn btn-sm btn-secondary" onclick="editarProducto(${p.id_producto})">Editar</button>
-                            <button class="btn btn-sm btn-danger" onclick="eliminarProducto(${p.id_producto})">Eliminar</button>
-                        </td>
-                    </tr>
-                `).join('');
+                
+                if (productos.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No hay productos registrados</td></tr>';
+                    return;
+                }
+                
+                let html = '';
+                for (let i = 0; i < productos.length; i++) {
+                    const p = productos[i];
+                    const imagenHtml = p.imagen_url ? 
+                        '<img src="' + p.imagen_url + '" alt="' + p.nombre + '" style="width:50px;height:50px;object-fit:cover;border-radius:4px;">' : 
+                        '<span style="color:#999;">Sin imagen</span>';
+                    
+                    const descripcionHtml = p.descripcion || '<span style="color:#999;">Sin descripción</span>';
+                    
+                    const stockClass = p.stock > 0 ? 'badge-success' : 'badge-danger';
+                    
+                    html += '<tr>' +
+                        '<td>' + p.id_producto + '</td>' +
+                        '<td>' + imagenHtml + '</td>' +
+                        '<td><strong>' + p.nombre + '</strong></td>' +
+                        '<td>' + descripcionHtml + '</td>' +
+                        '<td>' + formatearMoneda(p.precio) + '</td>' +
+                        '<td><span class="' + stockClass + '">' + p.stock + ' unidades</span></td>' +
+                        '<td>' +
+                            '<button class="btn btn-sm btn-secondary" onclick="editarProducto(' + p.id_producto + ')">Editar</button> ' +
+                            '<button class="btn btn-sm btn-danger" onclick="eliminarProducto(' + p.id_producto + ', \'' + p.nombre.replace(/'/g, "\\'") + '\')">Eliminar</button>' +
+                        '</td>' +
+                    '</tr>';
+                }
+                tbody.innerHTML = html;
             } catch (error) {
                 console.error('Error:', error);
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:red;">Error al cargar productos</td></tr>';
+                mostrarError('Error al cargar productos');
             }
         }
 
         async function guardarProducto(e) {
             e.preventDefault();
-
+            
             const id = document.getElementById('productoId').value;
             const data = {
                 nombre: document.getElementById('nombre').value.trim(),
@@ -139,7 +172,6 @@
                 imagen_url: document.getElementById('imagen_url').value.trim()
             };
 
-            // Validaciones frontend
             if (data.nombre.length < 3 || data.nombre.length > 100) {
                 mostrarError('El nombre debe tener entre 3 y 100 caracteres');
                 return;
@@ -156,32 +188,38 @@
             }
 
             try {
-                const url = id ? `${API_URL}/productos/${id}` : `${API_URL}/productos`;
+                const url = id ? API_URL + '/productos/' + id : API_URL + '/productos';
                 const method = id ? 'PUT' : 'POST';
-
+                
                 const response = await fetchAuth(url, {
-                    method,
+                    method: method,
                     body: JSON.stringify(data)
                 });
 
                 const result = await response.json();
 
                 if (response.ok) {
-                    mostrarExito(id ? 'Producto actualizado' : 'Producto creado');
+                    mostrarExito(id ? 'Producto actualizado exitosamente' : 'Producto creado exitosamente');
                     cancelarFormulario();
                     cargarProductos();
                 } else {
-                    mostrarError(result.error);
+                    mostrarError(result.error || 'Error al guardar el producto');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                mostrarError('Error al guardar el producto');
+                mostrarError('Error de conexión al guardar el producto');
             }
         }
 
         async function editarProducto(id) {
             try {
-                const response = await fetch(`${API_URL}/productos/${id}`);
+                const url = API_URL + '/productos/' + id;
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error('Error al cargar producto');
+                }
+                
                 const producto = await response.json();
 
                 document.getElementById('productoId').value = producto.id_producto;
@@ -190,38 +228,62 @@
                 document.getElementById('precio').value = producto.precio;
                 document.getElementById('stock').value = producto.stock;
                 document.getElementById('imagen_url').value = producto.imagen_url || '';
-
+                
                 document.getElementById('formTitulo').textContent = 'Editar Producto';
                 document.getElementById('formProducto').style.display = 'block';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             } catch (error) {
                 console.error('Error:', error);
+                mostrarError('Error al cargar el producto para edición');
             }
         }
 
-        async function eliminarProducto(id) {
-            if (!confirm('¿Eliminar este producto?')) return;
+        async function eliminarProducto(id, nombre) {
+            if (!confirm('¿Estás seguro de eliminar el producto "' + nombre + '"?\n\nEsta acción no se puede deshacer.')) {
+                return;
+            }
 
             try {
-                const response = await fetchAuth(`${API_URL}/productos/${id}`, {
+                const url = API_URL + '/productos/' + id;
+                const response = await fetchAuth(url, {
                     method: 'DELETE'
                 });
 
+                const result = await response.json();
+
                 if (response.ok) {
-                    mostrarExito('Producto eliminado');
+                    mostrarExito('Producto eliminado exitosamente');
                     cargarProductos();
+                } else {
+                    mostrarError(result.error || 'Error al eliminar el producto');
                 }
             } catch (error) {
                 console.error('Error:', error);
+                mostrarError('Error de conexión al eliminar el producto');
             }
         }
     </script>
 
     <style>
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
         .page-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 2rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
 
         .form-grid {
@@ -230,11 +292,27 @@
             gap: 1rem;
         }
 
-        textarea {
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group textarea {
             width: 100%;
-            padding: 12px;
+            padding: 0.75rem;
             border: 1px solid #ddd;
-            border-radius: 8px;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        textarea {
+            resize: vertical;
             font-family: inherit;
         }
 
@@ -244,6 +322,48 @@
             margin-top: 1rem;
         }
 
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: background 0.3s;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
         .tabla-admin {
             width: 100%;
             border-collapse: collapse;
@@ -251,18 +371,94 @@
 
         .tabla-admin th,
         .tabla-admin td {
-            padding: 12px;
+            padding: 0.75rem;
             text-align: left;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid #e5e7eb;
         }
 
         .tabla-admin th {
-            background: #f5f5f5;
+            background: #f9fafb;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .tabla-admin tbody tr:hover {
+            background: #f9fafb;
+        }
+
+        .badge-success {
+            display: inline-block;
+            background: #10b981;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .badge-danger {
+            display: inline-block;
+            background: #ef4444;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .error-msg, .success-msg {
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .error-msg {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        .success-msg {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .navbar {
+            background: #1f2937;
+            padding: 1rem 0;
+            margin-bottom: 2rem;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-brand {
+            color: white;
+            font-size: 1.25rem;
             font-weight: 600;
         }
 
-        .tabla-admin button {
-            margin-right: 0.5rem;
+        .nav-menu {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .nav-menu a {
+            color: #d1d5db;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .nav-menu a:hover,
+        .nav-menu a.active {
+            color: white;
         }
     </style>
 </body>

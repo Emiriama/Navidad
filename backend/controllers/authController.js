@@ -7,9 +7,9 @@ exports.registrar = async (req, res) => {
   const { nombre_usuario, correo, contrasena } = req.body;
 
   try {
-    // Verificar si el usuario ya existe
+    // Verificar si el usuario ya existe - CORREGIDO: email en lugar de correo
     const [usuarios] = await db.query(
-      'SELECT id_usuario FROM usuarios WHERE nombre_usuario = ? OR correo = ?',
+      'SELECT id_usuario FROM usuarios WHERE nombre_usuario = ? OR email = ?',
       [nombre_usuario, correo]
     );
 
@@ -21,10 +21,10 @@ exports.registrar = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const contrasenaHash = await bcrypt.hash(contrasena, salt);
 
-    // Insertar usuario
+    // Insertar usuario - CORREGIDO: email y password
     const [resultado] = await db.query(
-      'INSERT INTO usuarios (nombre_usuario, correo, contrasena, rol, fondos) VALUES (?, ?, ?, ?, ?)',
-      [nombre_usuario, correo, contrasenaHash, 'cliente', 0]
+      'INSERT INTO usuarios (nombre_usuario, email, password, rol, saldo) VALUES (?, ?, ?, ?, ?)',
+      [nombre_usuario, correo, contrasenaHash, 'usuario', 10000.00]
     );
 
     res.status(201).json({
@@ -34,7 +34,7 @@ exports.registrar = async (req, res) => {
 
   } catch (error) {
     console.error('Error al registrar:', error);
-    res.status(500).json({ error: 'Error al registrar usuario' });
+    res.status(500).json({ error: 'Error al registrar usuario', detalle: error.message });
   }
 };
 
@@ -55,8 +55,8 @@ exports.login = async (req, res) => {
 
     const usuario = usuarios[0];
 
-    // Verificar contraseña
-    const contrasenaValida = await bcrypt.compare(contrasena, usuario.contrasena);
+    // Verificar contraseña - CORREGIDO: password
+    const contrasenaValida = await bcrypt.compare(contrasena, usuario.password);
 
     if (!contrasenaValida) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
@@ -69,7 +69,7 @@ exports.login = async (req, res) => {
         nombre_usuario: usuario.nombre_usuario,
         rol: usuario.rol 
       },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || 'panaderia_navidena_secret_2024_muy_segura',
       { expiresIn: '24h' }
     );
 
@@ -79,9 +79,9 @@ exports.login = async (req, res) => {
       usuario: {
         id: usuario.id_usuario,
         nombre_usuario: usuario.nombre_usuario,
-        correo: usuario.correo,
+        email: usuario.email,
         rol: usuario.rol,
-        fondos: usuario.fondos
+        saldo: usuario.saldo
       }
     });
 
@@ -95,7 +95,7 @@ exports.login = async (req, res) => {
 exports.verificarSesion = async (req, res) => {
   try {
     const [usuarios] = await db.query(
-      'SELECT id_usuario, nombre_usuario, correo, rol, fondos FROM usuarios WHERE id_usuario = ?',
+      'SELECT id_usuario, nombre_usuario, email, rol, saldo FROM usuarios WHERE id_usuario = ?',
       [req.usuario.id]
     );
 

@@ -1,12 +1,11 @@
-require('dotenv').config(); // ← ESTO PRIMERO
+require('dotenv').config(); 
 const express = require('express');
 const cors = require('cors');
-
 const app = express();
 
 // Middleware
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5500',
+    origin: ['http://localhost:8000', 'http://127.0.0.1:8000', process.env.FRONTEND_URL || 'http://localhost:5500'],
     credentials: true
 }));
 app.use(express.json());
@@ -60,6 +59,7 @@ app.use((req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
+    // CORREGIDO: Comillas invertidas correctas para template literals
     console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });
 

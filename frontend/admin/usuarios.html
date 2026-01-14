@@ -9,13 +9,12 @@
 <body>
     <nav class="navbar">
         <div class="nav-container">
-            <div class="nav-brand">🎄 Admin - Panadería Navideña</div>
+            <div class="nav-brand">Admin - Panadería Navideña</div>
             <div class="nav-menu">
                 <a href="dashboard.html">Dashboard</a>
                 <a href="productos.html">Productos</a>
                 <a href="usuarios.html" class="active">Usuarios</a>
                 <a href="historial.html">Historial Ventas</a>
-                <a href="../index.html">Ver Sitio</a>
                 <a href="#" id="navLogout">Cerrar Sesión</a>
             </div>
         </div>
@@ -45,89 +44,140 @@
         </div>
     </div>
 
-    <script src="../js/config.js"></script>
-    <script src="../js/auth.js"></script>
+    <script src="../js/config.js?v=1"></script>
+    <script src="../js/auth.js?v=1"></script>
+    <script src="../js/admin.js?v=1"></script>
     <script>
-        protegerPaginaAdmin();
+         // Script para usuarios.html
+// Reemplaza todo el contenido del último <script> dentro de usuarios.html
 
-        document.addEventListener('DOMContentLoaded', () => {
-            cargarUsuarios();
+protegerPaginaAdmin();
+
+document.addEventListener('DOMContentLoaded', () => {
+    cargarUsuarios();
+});
+
+async function cargarUsuarios() {
+    console.log('Cargando usuarios...');
+    
+    const tbody = document.getElementById('usuariosBody');
+    
+    if (!tbody) {
+        console.error('Elemento usuariosBody no encontrado');
+        return;
+    }
+    
+    // Mostrar loading
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 2rem;">Cargando usuarios...</td></tr>';
+    
+    try {
+        const response = await fetchAuth(`${API_URL}/usuarios`);
+        
+        console.log('Respuesta usuarios status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
+        }
+        
+        const usuarios = await response.json();
+        console.log('Usuarios recibidos:', usuarios);
+        
+        if (!usuarios || usuarios.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 2rem; color: #666;">No hay usuarios registrados</td></tr>';
+            return;
+        }
+        
+        // Obtener usuario actual
+        const usuarioActual = getUsuario();
+        
+        // Generar filas
+        tbody.innerHTML = usuarios.map(u => {
+            const esMiUsuario = usuarioActual && u.id_usuario === usuarioActual.id;
+            
+            return `
+                <tr>
+                    <td>${u.id_usuario}</td>
+                    <td>${u.nombre_usuario}</td>
+                    <td>${u.correo}</td>
+                    <td>
+                        <select onchange="cambiarRol(${u.id_usuario}, this.value)" 
+                            ${esMiUsuario ? 'disabled' : ''}>
+                            <option value="cliente" ${u.rol === 'cliente' ? 'selected' : ''}>Cliente</option>
+                            <option value="administrador" ${u.rol === 'administrador' || u.rol === 'admin' ? 'selected' : ''}>Admin</option>
+                        </select>
+                    </td>
+                    <td>${formatearMoneda(u.fondos)}</td>
+                    <td>${formatearFecha(u.fecha_registro)}</td>
+                    <td>
+                        ${!esMiUsuario ? 
+                            `<button class="btn btn-sm btn-danger" onclick="eliminarUsuario(${u.id_usuario})">Eliminar</button>` :
+                            '<span style="color: #666;">Tu cuenta</span>'
+                        }
+                    </td>
+                </tr>
+            `;
+        }).join('');
+        
+        console.log('Usuarios cargados exitosamente');
+        
+    } catch (error) {
+        console.error('Error al cargar usuarios:', error);
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 2rem; color: #dc2626;">Error al cargar usuarios. Por favor, intenta nuevamente.</td></tr>';
+        mostrarError('Error al cargar usuarios');
+    }
+}
+
+async function cambiarRol(id, nuevoRol) {
+    console.log(`Cambiando rol del usuario ${id} a ${nuevoRol}`);
+    
+    try {
+        const response = await fetchAuth(`${API_URL}/usuarios/${id}/rol`, {
+            method: 'PUT',
+            body: JSON.stringify({ rol: nuevoRol })
         });
 
-        async function cargarUsuarios() {
-            try {
-                const response = await fetchAuth(`${API_URL}/usuarios`);
-                const usuarios = await response.json();
-                const tbody = document.getElementById('usuariosBody');
-
-                tbody.innerHTML = usuarios.map(u => `
-                    <tr>
-                        <td>${u.id_usuario}</td>
-                        <td>${u.nombre_usuario}</td>
-                        <td>${u.correo}</td>
-                        <td>
-                            <select onchange="cambiarRol(${u.id_usuario}, this.value)" 
-                                ${u.id_usuario === getUsuario().id ? 'disabled' : ''}>
-                                <option value="cliente" ${u.rol === 'cliente' ? 'selected' : ''}>Cliente</option>
-                                <option value="administrador" ${u.rol === 'administrador' ? 'selected' : ''}>Admin</option>
-                            </select>
-                        </td>
-                        <td>${formatearMoneda(u.fondos)}</td>
-                        <td>${formatearFecha(u.fecha_registro)}</td>
-                        <td>
-                            ${u.id_usuario !== getUsuario().id ? 
-                                `<button class="btn btn-sm btn-danger" onclick="eliminarUsuario(${u.id_usuario})">Eliminar</button>` :
-                                '<span>Tu cuenta</span>'
-                            }
-                        </td>
-                    </tr>
-                `).join('');
-            } catch (error) {
-                console.error('Error:', error);
-                mostrarError('Error al cargar usuarios');
-            }
+        if (response.ok) {
+            mostrarExito('Rol actualizado exitosamente');
+            console.log('Rol actualizado');
+        } else {
+            const errorData = await response.json();
+            console.error('Error al cambiar rol:', errorData);
+            mostrarError(errorData.error || 'Error al cambiar el rol');
+            cargarUsuarios();
         }
+    } catch (error) {
+        console.error('Error al cambiar el rol:', error);
+        mostrarError('Error al cambiar el rol');
+        cargarUsuarios();
+    }
+}
 
-        async function cambiarRol(id, nuevoRol) {
-            try {
-                const response = await fetchAuth(`${API_URL}/usuarios/${id}/rol`, {
-                    method: 'PUT',
-                    body: JSON.stringify({ rol: nuevoRol })
-                });
+async function eliminarUsuario(id) {
+    if (!confirm('¿Eliminar este usuario? Esta acción no se puede deshacer.')) {
+        return;
+    }
+    
+    console.log(`Eliminando usuario ${id}`);
 
-                if (response.ok) {
-                    mostrarExito('Rol actualizado exitosamente');
-                } else {
-                    mostrarError('Error al cambiar el rol');
-                    cargarUsuarios();
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                mostrarError('Error al cambiar el rol');
-                cargarUsuarios();
-            }
+    try {
+        const response = await fetchAuth(`${API_URL}/usuarios/${id}`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            mostrarExito('Usuario eliminado');
+            console.log('Usuario eliminado exitosamente');
+            cargarUsuarios();
+        } else {
+            const result = await response.json();
+            console.error('Error al eliminar:', result);
+            mostrarError(result.error || 'Error al eliminar usuario');
         }
-
-        async function eliminarUsuario(id) {
-            if (!confirm('¿Eliminar este usuario? Esta acción no se puede deshacer.')) return;
-
-            try {
-                const response = await fetchAuth(`${API_URL}/usuarios/${id}`, {
-                    method: 'DELETE'
-                });
-
-                if (response.ok) {
-                    mostrarExito('Usuario eliminado');
-                    cargarUsuarios();
-                } else {
-                    const result = await response.json();
-                    mostrarError(result.error);
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                mostrarError('Error al eliminar usuario');
-            }
-        }
+    } catch (error) {
+        console.error('Error al eliminar usuario:', error);
+        mostrarError('Error al eliminar usuario');
+    }
+}
     </script>
 
     <style>

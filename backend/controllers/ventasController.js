@@ -29,7 +29,7 @@ exports.obtenerTicket = async (req, res) => {
 exports.obtenerTodasVentas = async (req, res) => {
   try {
     const [ventas] = await db.query(`
-      SELECT v.*, u.nombre_usuario, u.correo
+      SELECT v.*, u.nombre_usuario, u.email
       FROM ventas v
       INNER JOIN usuarios u ON v.id_usuario = u.id_usuario
       ORDER BY v.fecha_compra DESC
@@ -48,7 +48,7 @@ exports.obtenerVentasPorFecha = async (req, res) => {
 
   try {
     let query = `
-      SELECT v.*, u.nombre_usuario, u.correo
+      SELECT v.*, u.nombre_usuario, u.email
       FROM ventas v
       INNER JOIN usuarios u ON v.id_usuario = u.id_usuario
     `;

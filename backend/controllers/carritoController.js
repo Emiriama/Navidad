@@ -169,13 +169,13 @@ exports.procesarCompra = async (req, res) => {
     // Calcular total
     const total = items.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
 
-    // Verificar fondos
+    // Verificar fondos (CORREGIDO: saldo en lugar de fondos)
     const [usuarios] = await connection.query(
-      'SELECT fondos FROM usuarios WHERE id_usuario = ?',
+      'SELECT saldo FROM usuarios WHERE id_usuario = ?',
       [id_usuario]
     );
 
-    if (usuarios[0].fondos < total) {
+    if (usuarios[0].saldo < total) {
       await connection.rollback();
       return res.status(400).json({ error: 'Fondos insuficientes' });
     }
@@ -205,9 +205,9 @@ exports.procesarCompra = async (req, res) => {
       );
     }
 
-    // Descontar fondos
+    // Descontar fondos (CORREGIDO: saldo en lugar de fondos)
     await connection.query(
-      'UPDATE usuarios SET fondos = fondos - ? WHERE id_usuario = ?',
+      'UPDATE usuarios SET saldo = saldo - ? WHERE id_usuario = ?',
       [total, id_usuario]
     );
 

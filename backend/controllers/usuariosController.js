@@ -7,7 +7,7 @@ exports.obtenerPerfil = async (req, res) => {
 
   try {
     const [usuarios] = await db.query(
-      'SELECT id_usuario, nombre_usuario, correo, rol, fondos, fecha_registro FROM usuarios WHERE id_usuario = ?',
+      'SELECT id_usuario, nombre_usuario, email as correo, rol, saldo as fondos, fecha_creacion as fecha_registro FROM usuarios WHERE id_usuario = ?',
       [id_usuario]
     );
 
@@ -30,11 +30,11 @@ exports.agregarFondos = async (req, res) => {
   try {
     // Obtener fondos actuales
     const [usuarios] = await db.query(
-      'SELECT fondos FROM usuarios WHERE id_usuario = ?',
+      'SELECT saldo FROM usuarios WHERE id_usuario = ?',
       [id_usuario]
     );
 
-    const fondosActuales = parseFloat(usuarios[0].fondos);
+    const fondosActuales = parseFloat(usuarios[0].saldo);
     const nuevosFondos = fondosActuales + parseFloat(monto);
 
     if (nuevosFondos > 999999999999) {
@@ -42,7 +42,7 @@ exports.agregarFondos = async (req, res) => {
     }
 
     await db.query(
-      'UPDATE usuarios SET fondos = ? WHERE id_usuario = ?',
+      'UPDATE usuarios SET saldo = ? WHERE id_usuario = ?',
       [nuevosFondos, id_usuario]
     );
 
@@ -83,7 +83,7 @@ exports.actualizarPerfil = async (req, res) => {
     const params = [];
 
     if (correo) {
-      query += ' correo = ?';
+      query += ' email = ?';
       params.push(correo);
     }
 
@@ -92,7 +92,7 @@ exports.actualizarPerfil = async (req, res) => {
       const contrasenaHash = await bcrypt.hash(contrasena, salt);
       
       if (params.length > 0) query += ',';
-      query += ' contrasena = ?';
+      query += ' password = ?';
       params.push(contrasenaHash);
     }
 
@@ -116,7 +116,7 @@ exports.actualizarPerfil = async (req, res) => {
 exports.obtenerTodosUsuarios = async (req, res) => {
   try {
     const [usuarios] = await db.query(
-      'SELECT id_usuario, nombre_usuario, correo, rol, fondos, fecha_registro FROM usuarios ORDER BY fecha_registro DESC'
+      'SELECT id_usuario, nombre_usuario, email as correo, rol, saldo as fondos, fecha_creacion as fecha_registro FROM usuarios ORDER BY fecha_creacion DESC'
     );
     res.json(usuarios);
   } catch (error) {

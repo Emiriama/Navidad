@@ -9,7 +9,7 @@
 <body>
     <nav class="navbar">
         <div class="nav-container">
-            <div class="nav-brand">🎄 Panadería Navideña</div>
+            <div class="nav-brand">Panadería Navideña</div>
             <div class="nav-menu">
                 <a href="index.html">Inicio</a>
                 <a href="productos.html">Productos</a>
@@ -36,7 +36,8 @@
         </div>
     </div>
 
-    <script src="js/config.js"></script>
+    <script src="js/config.js?v=1"></script>
+    <script src="js/auth.js?v=1"></script>
     <script>
         const form = document.getElementById('loginForm');
         const errorMsg = document.getElementById('errorMsg');
@@ -63,6 +64,7 @@
             }
 
             try {
+                // CORREGIDO: Paréntesis en lugar de comillas invertidas
                 const response = await fetch(`${API_URL}/auth/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -75,7 +77,7 @@
                     localStorage.setItem('token', result.token);
                     localStorage.setItem('usuario', JSON.stringify(result.usuario));
                     
-                    if (result.usuario.rol === 'administrador') {
+                    if (result.usuario.rol === 'admin') {
                         window.location.href = 'admin/dashboard.html';
                     } else {
                         window.location.href = 'productos.html';

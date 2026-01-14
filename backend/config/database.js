@@ -18,7 +18,7 @@ const pool = mysql.createPool({
   enableKeepAlive: true,
   keepAliveInitialDelay: 0,
   ssl: {
-    rejectUnauthorized: false  // ← AGREGAR ESTO
+    rejectUnauthorized: false
   }
 });
 

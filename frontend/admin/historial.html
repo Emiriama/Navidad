@@ -9,13 +9,12 @@
 <body>
     <nav class="navbar">
         <div class="nav-container">
-            <div class="nav-brand">🎄 Admin - Panadería Navideña</div>
+            <div class="nav-brand">Admin - Panadería Navideña</div>
             <div class="nav-menu">
                 <a href="dashboard.html">Dashboard</a>
                 <a href="productos.html">Productos</a>
                 <a href="usuarios.html">Usuarios</a>
                 <a href="historial.html" class="active">Historial Ventas</a>
-                <a href="../index.html">Ver Sitio</a>
                 <a href="#" id="navLogout">Cerrar Sesión</a>
             </div>
         </div>
@@ -62,75 +61,136 @@
     </div>
 
     <script src="../js/config.js"></script>
+    <script src="../js/admin.js"></script>  
     <script src="../js/auth.js"></script>
+
     <script>
-        protegerPaginaAdmin();
 
-        document.addEventListener('DOMContentLoaded', () => {
-            cargarVentas();
-            document.getElementById('filtroForm').addEventListener('submit', filtrarVentas);
-        });
+protegerPaginaAdmin();
 
-        async function cargarVentas() {
-            try {
-                const response = await fetchAuth(`${API_URL}/ventas`);
-                const ventas = await response.json();
-                mostrarVentas(ventas);
-            } catch (error) {
-                console.error('Error:', error);
-                mostrarError('Error al cargar el historial');
-            }
+document.addEventListener('DOMContentLoaded', () => {
+    cargarVentas();
+    
+    const filtroForm = document.getElementById('filtroForm');
+    if (filtroForm) {
+        filtroForm.addEventListener('submit', filtrarVentas);
+    }
+});
+
+async function cargarVentas() {
+    console.log('Cargando historial de ventas...');
+    
+    const tbody = document.getElementById('ventasBody');
+    
+    if (!tbody) {
+        console.error('Elemento ventasBody no encontrado');
+        return;
+    }
+    
+    // Mostrar loading
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem;">Cargando ventas...</td></tr>';
+    
+    try {
+        const response = await fetchAuth(`${API_URL}/ventas`);
+        
+        console.log('Respuesta ventas status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
         }
+        
+        const ventas = await response.json();
+        console.log('Ventas recibidas:', ventas);
+        
+        mostrarVentas(ventas);
+        
+    } catch (error) {
+        console.error('Error al cargar ventas:', error);
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem; color: #dc2626;">Error al cargar el historial. Por favor, intenta nuevamente.</td></tr>';
+        mostrarError('Error al cargar el historial');
+    }
+}
 
-        async function filtrarVentas(e) {
-            e.preventDefault();
+async function filtrarVentas(e) {
+    e.preventDefault();
+    
+    console.log('Filtrando ventas...');
 
-            const fechaInicio = document.getElementById('fecha_inicio').value;
-            const fechaFin = document.getElementById('fecha_fin').value;
+    const fechaInicio = document.getElementById('fecha_inicio').value;
+    const fechaFin = document.getElementById('fecha_fin').value;
 
-            if (!fechaInicio && !fechaFin) {
-                cargarVentas();
-                return;
-            }
+    if (!fechaInicio && !fechaFin) {
+        cargarVentas();
+        return;
+    }
 
-            try {
-                let url = `${API_URL}/ventas/fecha?`;
-                if (fechaInicio) url += `fecha_inicio=${fechaInicio}&`;
-                if (fechaFin) url += `fecha_fin=${fechaFin}`;
+    const tbody = document.getElementById('ventasBody');
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem;">Filtrando ventas...</td></tr>';
 
-                const response = await fetchAuth(url);
-                const ventas = await response.json();
-                mostrarVentas(ventas);
-            } catch (error) {
-                console.error('Error:', error);
-                mostrarError('Error al filtrar ventas');
-            }
+    try {
+        let url = `${API_URL}/ventas/fecha?`;
+        if (fechaInicio) url += `fecha_inicio=${fechaInicio}&`;
+        if (fechaFin) url += `fecha_fin=${fechaFin}`;
+
+        console.log('URL de filtro:', url);
+
+        const response = await fetchAuth(url);
+        
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
         }
+        
+        const ventas = await response.json();
+        console.log('Ventas filtradas:', ventas);
+        
+        mostrarVentas(ventas);
+        
+    } catch (error) {
+        console.error('Error al filtrar ventas:', error);
+        mostrarError('Error al filtrar ventas');
+        cargarVentas();
+    }
+}
 
-        function limpiarFiltros() {
-            document.getElementById('filtroForm').reset();
-            cargarVentas();
-        }
+function limpiarFiltros() {
+    console.log('Limpiando filtros...');
+    
+    const filtroForm = document.getElementById('filtroForm');
+    if (filtroForm) {
+        filtroForm.reset();
+    }
+    
+    cargarVentas();
+}
 
-        function mostrarVentas(ventas) {
-            const tbody = document.getElementById('ventasBody');
+function mostrarVentas(ventas) {
+    const tbody = document.getElementById('ventasBody');
 
-            if (ventas.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No hay ventas registradas</td></tr>';
-                return;
-            }
+    if (!ventas || ventas.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem; color: #666;">No hay ventas registradas</td></tr>';
+        return;
+    }
 
-            tbody.innerHTML = ventas.map(v => `
-                <tr>
-                    <td><strong>${v.numero_venta}</strong></td>
-                    <td>${v.nombre_usuario}</td>
-                    <td>${v.correo}</td>
-                    <td>${formatearMoneda(v.total)}</td>
-                    <td>${formatearFecha(v.fecha_compra)}</td>
-                    <td><span class="badge badge-${v.estado}">${v.estado}</span></td>
-                </tr>
-            `).join('');
-        }
+    tbody.innerHTML = ventas.map(v => {
+        // Determinar clase del badge según el estado
+        let badgeClass = 'badge-success';
+        if (v.estado === 'pendiente') badgeClass = 'badge-warning';
+        if (v.estado === 'cancelada') badgeClass = 'badge-danger';
+        
+        return `
+            <tr>
+                <td><strong>${v.numero_venta || v.id_venta || 'N/A'}</strong></td>
+                <td>${v.nombre_usuario || 'N/A'}</td>
+                <td>${v.correo || 'N/A'}</td>
+                <td>${formatearMoneda(v.total)}</td>
+                <td>${formatearFecha(v.fecha_compra || v.fecha_venta)}</td>
+                <td><span class="badge ${badgeClass}">${v.estado || 'completada'}</span></td>
+            </tr>
+        `;
+    }).join('');
+    
+    console.log(`${ventas.length} ventas mostradas`);
+}
     </script>
 
     <style>

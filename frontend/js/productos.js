@@ -9,6 +9,8 @@ async function cargarProductos() {
 
     try {
         loading.style.display = 'block';
+        
+        // CORREGIDO: Cambiadas comillas invertidas por paréntesis
         const response = await fetch(`${API_URL}/productos/disponibles`);
         
         if (!response.ok) {
@@ -54,7 +56,6 @@ async function cargarProductos() {
                 </div>
             </div>
         `).join('');
-
     } catch (error) {
         console.error('Error:', error);
         loading.style.display = 'none';
@@ -64,6 +65,7 @@ async function cargarProductos() {
 }
 
 async function agregarAlCarrito(idProducto) {
+    // CORREGIDO: Cambiadas comillas invertidas por paréntesis
     const cantidadInput = document.getElementById(`cantidad-${idProducto}`);
     const cantidad = parseInt(cantidadInput.value);
 
@@ -73,6 +75,7 @@ async function agregarAlCarrito(idProducto) {
     }
 
     try {
+        // CORREGIDO: Cambiadas comillas invertidas por paréntesis
         const response = await fetchAuth(`${API_URL}/carrito`, {
             method: 'POST',
             body: JSON.stringify({

@@ -1,77 +1,151 @@
-// Verificar sesión al cargar la página
-document.addEventListener('DOMContentLoaded', () => {
+// auth.js - Sistema de autenticación
+
+// Guardar usuario en localStorage
+function guardarUsuario(usuario, token) {
+    localStorage.setItem('usuario', JSON.stringify(usuario));
+    localStorage.setItem('token', token);
+    console.log('Usuario guardado:', usuario);
+}
+
+// Obtener usuario del localStorage
+function getUsuario() {
+    const usuarioStr = localStorage.getItem('usuario');
+    if (!usuarioStr) return null;
+    
+    try {
+        return JSON.parse(usuarioStr);
+    } catch (error) {
+        console.error('Error al parsear usuario:', error);
+        return null;
+    }
+}
+
+// Obtener token del localStorage
+function getToken() {
+    return localStorage.getItem('token');
+}
+
+// Verificar si el usuario está autenticado
+function estaAutenticado() {
     const token = getToken();
     const usuario = getUsuario();
+    return token !== null && usuario !== null;
+}
 
-    const navLogin = document.getElementById('navLogin');
-    const navLogout = document.getElementById('navLogout');
-    const navCarrito = document.getElementById('navCarrito');
-    const navPerfil = document.getElementById('navPerfil');
-    const navAdmin = document.getElementById('navAdmin');
+// Verificar si el usuario es admin
+function esAdmin() {
+    const usuario = getUsuario();
+    if (!usuario) return false;
+    return usuario.rol === 'admin' || usuario.rol === 'administrador';
+}
 
-    if (token && usuario) {
-        // Usuario logueado
-        if (navLogin) navLogin.style.display = 'none';
-        if (navLogout) navLogout.style.display = 'block';
-        if (navCarrito) navCarrito.style.display = 'block';
-        if (navPerfil) navPerfil.style.display = 'block';
-
-        // Mostrar opción de admin si es administrador
-        if (usuario.rol === 'administrador' && navAdmin) {
-            navAdmin.style.display = 'block';
-        }
-
-        // Actualizar contador del carrito
-        actualizarContadorCarrito();
-    } else {
-        // Usuario no logueado
-        if (navLogin) navLogin.style.display = 'block';
-        if (navLogout) navLogout.style.display = 'none';
-        if (navCarrito) navCarrito.style.display = 'none';
-        if (navPerfil) navPerfil.style.display = 'none';
-        if (navAdmin) navAdmin.style.display = 'none';
+// Proteger página de admin - Redirige si no está autenticado o no es admin
+function protegerPaginaAdmin() {
+    console.log('Verificando autenticación de admin...');
+    
+    const token = getToken();
+    const usuario = getUsuario();
+    
+    console.log('Token:', token);
+    console.log('Usuario:', usuario);
+    
+    // Si no hay token o usuario, redirigir a login
+    if (!token || !usuario) {
+        console.log('No hay sesión activa, redirigiendo a login...');
+        alert('Debes iniciar sesión para acceder a esta página');
+        window.location.href = '../login.html';
+        return false;
     }
+    
+    // Verificar que sea admin
+    if (usuario.rol !== 'admin' && usuario.rol !== 'administrador') {
+        console.log('Usuario no es administrador:', usuario.rol);
+        alert('No tienes permisos de administrador');
+        window.location.href = '../index.html';
+        return false;
+    }
+    
+    console.log('Autenticación exitosa para admin:', usuario.nombre_usuario);
+    return true;
+}
 
-    // Cerrar sesión
+// Proteger página de cliente - Redirige si no está autenticado
+function protegerPagina() {
+    console.log('Verificando autenticación de usuario...');
+    
+    if (!estaAutenticado()) {
+        console.log('No hay sesión activa, redirigiendo a login...');
+        alert('Debes iniciar sesión para acceder a esta página');
+        window.location.href = 'login.html';
+        return false;
+    }
+    
+    console.log('Autenticación exitosa');
+    return true;
+}
+
+// Cerrar sesión
+function cerrarSesion() {
+    console.log('Cerrando sesión...');
+    localStorage.removeItem('token');
+    localStorage.removeItem('usuario');
+    window.location.href = '../login.html';
+}
+
+// Fetch con autenticación
+async function fetchAuth(url, options = {}) {
+    const token = getToken();
+    
+    if (!token) {
+        console.error('No hay token disponible');
+        throw new Error('No autenticado');
+    }
+    
+    // Configurar headers por defecto
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        ...(options.headers || {})
+    };
+    
+    // Realizar fetch con autenticación
+    const response = await fetch(url, {
+        ...options,
+        headers
+    });
+    
+    // Si la respuesta es 401 (no autorizado), cerrar sesión
+    if (response.status === 401) {
+        console.error('Token inválido o expirado');
+        alert('Tu sesión ha expirado. Por favor inicia sesión nuevamente.');
+        cerrarSesion();
+        throw new Error('Token inválido');
+    }
+    
+    return response;
+}
+
+// Event listeners para botones de logout
+document.addEventListener('DOMContentLoaded', function() {
+    // Botón de cerrar sesión en el navbar
+    const navLogout = document.getElementById('navLogout');
     if (navLogout) {
-        navLogout.addEventListener('click', (e) => {
+        navLogout.addEventListener('click', function(e) {
             e.preventDefault();
-            localStorage.removeItem('token');
-            localStorage.removeItem('usuario');
-            window.location.href = '/index.html';
+            if (confirm('¿Estás seguro de cerrar sesión?')) {
+                cerrarSesion();
+            }
         });
     }
-});
-
-// Actualizar contador del carrito
-async function actualizarContadorCarrito() {
-    try {
-        const response = await fetchAuth(`${API_URL}/carrito`);
-        if (response.ok) {
-            const data = await response.json();
-            const contador = document.getElementById('carritoCount');
-            if (contador) {
-                contador.textContent = data.items.length;
+    
+    // Otros botones de logout
+    const logoutButtons = document.querySelectorAll('[data-logout]');
+    logoutButtons.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (confirm('¿Estás seguro de cerrar sesión?')) {
+                cerrarSesion();
             }
-        }
-    } catch (error) {
-        console.error('Error al actualizar contador:', error);
-    }
-}
-
-// Proteger páginas que requieren autenticación
-function protegerPagina() {
-    const token = getToken();
-    if (!token) {
-        window.location.href = '/login.html';
-    }
-}
-
-// Proteger páginas de administrador
-function protegerPaginaAdmin() {
-    const usuario = getUsuario();
-    if (!usuario || usuario.rol !== 'administrador') {
-        alert('Acceso denegado. Se requieren permisos de administrador.');
-        window.location.href = '/index.html';
-    }
-}
+        });
+    });
+});

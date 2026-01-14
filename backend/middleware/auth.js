@@ -19,7 +19,7 @@ const verificarToken = (req, res, next) => {
 
 // Verificar si es administrador
 const verificarAdmin = (req, res, next) => {
-  if (req.usuario.rol !== 'administrador') {
+  if (req.usuario.rol !== 'admin') {
     return res.status(403).json({ error: 'Acceso denegado. Se requieren permisos de administrador' });
   }
   next();

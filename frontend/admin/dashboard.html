@@ -10,13 +10,12 @@
 <body>
     <nav class="navbar">
         <div class="nav-container">
-            <div class="nav-brand">🎄 Admin - Panadería Navideña</div>
+            <div class="nav-brand">Admin - Panadería Navideña</div>
             <div class="nav-menu">
                 <a href="dashboard.html" class="active">Dashboard</a>
                 <a href="productos.html">Productos</a>
                 <a href="usuarios.html">Usuarios</a>
                 <a href="historial.html">Historial Ventas</a>
-                <a href="../index.html">Ver Sitio</a>
                 <a href="#" id="navLogout">Cerrar Sesión</a>
             </div>
         </div>
@@ -28,21 +27,21 @@
         <!-- Estadísticas Rápidas -->
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-icon">💰</div>
+                <div class="stat-icon"></div>
                 <div class="stat-info">
                     <h3 id="totalIngresos">$0.00</h3>
                     <p>Total Ingresos</p>
                 </div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon">📦</div>
+                <div class="stat-icon"></div>
                 <div class="stat-info">
                     <h3 id="totalVentas">0</h3>
                     <p>Total Ventas</p>
                 </div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon">🎯</div>
+                <div class="stat-icon"></div>
                 <div class="stat-info">
                     <h3 id="ventasHoy">0</h3>
                     <p>Ventas Hoy</p>
@@ -60,53 +59,111 @@
     </div>
 
     <script src="../js/config.js"></script>
+    <script src="../js/admin.js"></script>  
     <script src="../js/auth.js"></script>
     <script>
-        protegerPaginaAdmin();
+       // Script para dashboard.html
+// Reemplaza todo el contenido del <script> dentro de dashboard.html
 
-        document.addEventListener('DOMContentLoaded', () => {
-            cargarEstadisticas();
-        });
+protegerPaginaAdmin();
 
-        async function cargarEstadisticas() {
-            try {
-                const response = await fetchAuth(`${API_URL}/ventas/estadisticas`);
-                const data = await response.json();
+document.addEventListener('DOMContentLoaded', () => {
+    cargarEstadisticas();
+});
 
-                document.getElementById('totalIngresos').textContent = formatearMoneda(data.total_ingresos);
-                document.getElementById('totalVentas').textContent = data.total_ventas;
-                document.getElementById('ventasHoy').textContent = data.ventas_hoy;
-
-                // Gráfico de ventas por mes
-                const ctx = document.getElementById('ventasMesChart').getContext('2d');
-                new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: data.ventas_por_mes.map(v => v.mes),
-                        datasets: [{
-                            label: 'Ingresos',
-                            data: data.ventas_por_mes.map(v => v.ingresos),
-                            backgroundColor: 'rgba(196, 30, 58, 0.6)',
-                            borderColor: 'rgba(196, 30, 58, 1)',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        scales: {
-                            y: {
-                                beginAtZero: true
-                            }
-                        }
-                    }
-                });
-
-            } catch (error) {
-                console.error('Error:', error);
-            }
+async function cargarEstadisticas() {
+    console.log('Cargando estadísticas...');
+    
+    try {
+        const response = await fetchAuth(`${API_URL}/ventas/estadisticas`);
+        
+        console.log('Respuesta estadísticas status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
         }
-    </script>
+        
+        const data = await response.json();
+        console.log('Datos recibidos:', data);
 
+        // Actualizar valores en el DOM
+        const totalIngresosEl = document.getElementById('totalIngresos');
+        const totalVentasEl = document.getElementById('totalVentas');
+        const ventasHoyEl = document.getElementById('ventasHoy');
+
+        if (totalIngresosEl) {
+            totalIngresosEl.textContent = formatearMoneda(data.total_ingresos || 0);
+        }
+        
+        if (totalVentasEl) {
+            totalVentasEl.textContent = data.total_ventas || 0;
+        }
+        
+        if (ventasHoyEl) {
+            ventasHoyEl.textContent = data.ventas_hoy || 0;
+        }
+
+        // Crear gráfico si hay datos
+        if (data.ventas_por_mes && data.ventas_por_mes.length > 0) {
+            crearGraficoVentas(data.ventas_por_mes);
+        } else {
+            console.log('No hay datos de ventas por mes');
+        }
+
+    } catch (error) {
+        console.error('Error al cargar estadísticas:', error);
+        
+        // Mostrar valores por defecto
+        const totalIngresosEl = document.getElementById('totalIngresos');
+        const totalVentasEl = document.getElementById('totalVentas');
+        const ventasHoyEl = document.getElementById('ventasHoy');
+        
+        if (totalIngresosEl) totalIngresosEl.textContent = '$0.00';
+        if (totalVentasEl) totalVentasEl.textContent = '0';
+        if (ventasHoyEl) ventasHoyEl.textContent = '0';
+    }
+}
+
+function crearGraficoVentas(ventasPorMes) {
+    const ctx = document.getElementById('ventasMesChart');
+    
+    if (!ctx) {
+        console.error('Canvas ventasMesChart no encontrado');
+        return;
+    }
+    
+    try {
+        const chartCtx = ctx.getContext('2d');
+        
+        new Chart(chartCtx, {
+            type: 'bar',
+            data: {
+                labels: ventasPorMes.map(v => v.mes),
+                datasets: [{
+                    label: 'Ingresos',
+                    data: ventasPorMes.map(v => parseFloat(v.ingresos) || 0),
+                    backgroundColor: 'rgba(196, 30, 58, 0.6)',
+                    borderColor: 'rgba(196, 30, 58, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+        
+        console.log('Gráfico creado exitosamente');
+    } catch (error) {
+        console.error('Error al crear gráfico:', error);
+    }
+}
+    </script>
+         
     <style>
         .stats-grid {
             display: grid;

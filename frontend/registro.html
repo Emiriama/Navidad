@@ -9,7 +9,7 @@
 <body>
     <nav class="navbar">
         <div class="nav-container">
-            <div class="nav-brand">🎄 Panadería Navideña</div>
+            <div class="nav-brand"> Panadería Navideña</div>
             <div class="nav-menu">
                 <a href="index.html">Inicio</a>
                 <a href="productos.html">Productos</a>
@@ -47,74 +47,84 @@
         </div>
     </div>
 
-    <script src="js/config.js"></script>
+
+    <script src="js/config.js?v=1"></script>
+    <script src="js/auth.js?v=1"></script>
+
+    
     <script>
-        const form = document.getElementById('registroForm');
-        const errorMsg = document.getElementById('errorMsg');
-        const successMsg = document.getElementById('successMsg');
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('registroForm');
+            const errorMsg = document.getElementById('errorMsg');
+            const successMsg = document.getElementById('successMsg');
 
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            errorMsg.textContent = '';
-            successMsg.textContent = '';
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                errorMsg.textContent = '';
+                successMsg.textContent = '';
 
-            const formData = new FormData(form);
-            const data = {
-                nombre_usuario: formData.get('nombre_usuario').trim(),
-                correo: formData.get('correo').trim(),
-                contrasena: formData.get('contrasena')
-            };
+                const formData = new FormData(form);
+                const data = {
+                    nombre_usuario: formData.get('nombre_usuario').trim(),
+                    correo: formData.get('correo').trim(),
+                    contrasena: formData.get('contrasena')
+                };
 
-            const confirmarContrasena = formData.get('confirmar_contrasena');
+                const confirmarContrasena = formData.get('confirmar_contrasena');
 
-            // Validaciones frontend
-            if (data.nombre_usuario.length < 3 || data.nombre_usuario.length > 50) {
-                errorMsg.textContent = 'El nombre de usuario debe tener entre 3 y 50 caracteres';
-                return;
-            }
-
-            if (!/^[a-zA-Z0-9_]+$/.test(data.nombre_usuario)) {
-                errorMsg.textContent = 'El nombre de usuario solo puede contener letras, números y guiones bajos';
-                return;
-            }
-
-            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.correo)) {
-                errorMsg.textContent = 'Correo electrónico inválido';
-                return;
-            }
-
-            if (data.contrasena.length < 6) {
-                errorMsg.textContent = 'La contraseña debe tener al menos 6 caracteres';
-                return;
-            }
-
-            if (data.contrasena !== confirmarContrasena) {
-                errorMsg.textContent = 'Las contraseñas no coinciden';
-                return;
-            }
-
-            try {
-                const response = await fetch(`${API_URL}/auth/registro`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    successMsg.textContent = 'Registro exitoso. Redirigiendo al inicio de sesión...';
-                    form.reset();
-                    setTimeout(() => {
-                        window.location.href = 'login.html';
-                    }, 2000);
-                } else {
-                    errorMsg.textContent = result.error || 'Error al registrar usuario';
+                // Validaciones frontend
+                if (data.nombre_usuario.length < 3 || data.nombre_usuario.length > 50) {
+                    errorMsg.textContent = 'El nombre de usuario debe tener entre 3 y 50 caracteres';
+                    return;
                 }
-            } catch (error) {
-                console.error('Error:', error);
-                errorMsg.textContent = 'Error de conexión con el servidor';
-            }
+
+                if (!/^[a-zA-Z0-9_]+$/.test(data.nombre_usuario)) {
+                    errorMsg.textContent = 'El nombre de usuario solo puede contener letras, números y guiones bajos';
+                    return;
+                }
+
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.correo)) {
+                    errorMsg.textContent = 'Correo electrónico inválido';
+                    return;
+                }
+
+                if (data.contrasena.length < 6) {
+                    errorMsg.textContent = 'La contraseña debe tener al menos 6 caracteres';
+                    return;
+                }
+
+                if (data.contrasena !== confirmarContrasena) {
+                    errorMsg.textContent = 'Las contraseñas no coinciden';
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${API_URL}/auth/registro`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        successMsg.textContent = 'Registro exitoso. Redirigiendo al inicio de sesión...';
+                        successMsg.style.display = 'block';
+                        form.reset();
+                        setTimeout(() => {
+                            window.location.href = 'login.html';
+                        }, 2000);
+                    } else {
+                        errorMsg.textContent = result.error || 'Error al registrar usuario';
+                        errorMsg.style.display = 'block';
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    errorMsg.textContent = 'Error de conexión con el servidor';
+                    errorMsg.style.display = 'block';
+                }
+            });
         });
     </script>
 </body>
