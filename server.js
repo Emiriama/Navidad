@@ -1,32 +1,42 @@
 require('dotenv').config(); 
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
+
 const app = express();
 
-// Middleware
+// Middleware CORS
 app.use(cors({
-    origin: ['http://localhost:8000', 'http://127.0.0.1:8000', process.env.FRONTEND_URL || 'http://localhost:5500'],
+    origin: [
+        'http://localhost:8000', 
+        'http://127.0.0.1:8000',
+        'https://panaderia-backend-b8eu.onrender.com'
+    ],
     credentials: true
 }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Importar rutas (esto cargará database.js DESPUÉS de que dotenv esté configurado)
-const productRoutes = require('./backend/routes/productos');
-const authRoutes = require('./backend/routes/auth');
-const cartRoutes = require('./backend/routes/carrito');
-const userRoutes = require('./backend/routes/usuarios');
-const ventasRoutes = require('./backend/routes/ventas');
+// Servir archivos estáticos del frontend
+app.use(express.static(path.join(__dirname, '../frontend')));
 
-// Usar rutas
+// Importar rutas
+const productRoutes = require('./routes/productos');
+const authRoutes = require('./routes/auth');
+const cartRoutes = require('./routes/carrito');
+const userRoutes = require('./routes/usuarios');
+const ventasRoutes = require('./routes/ventas');
+
+// Rutas API
 app.use('/api/productos', productRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/carrito', cartRoutes);
 app.use('/api/usuarios', userRoutes);
 app.use('/api/ventas', ventasRoutes);
 
-// Ruta raíz
-app.get('/', (req, res) => {
+// Ruta raíz API
+app.get('/api', (req, res) => {
     res.json({ 
         mensaje: '🎄 API Panadería Navideña funcionando',
         rutas: {
@@ -49,17 +59,13 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Manejador 404
-app.use((req, res) => {
-    res.status(404).json({ 
-        error: 'Ruta no encontrada',
-        ruta: req.url 
-    });
+// Catch-all para servir el frontend (DEBE IR AL FINAL)
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend', 'index.html'));
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    // CORREGIDO: Comillas invertidas correctas para template literals
     console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });
 
